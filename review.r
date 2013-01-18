@@ -102,7 +102,7 @@ pred_data=cbind(db_test[,1:3],pred_test[,3])
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.2));
+  data.frame(event=output(x,.15));
 })
 colnames(pred_data)=c('User','Events')
 pred_data$Events=gsub("[[:space:]]*$","",pred_data$Events)
