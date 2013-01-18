@@ -48,7 +48,7 @@ pred_data=cbind(head(pred_data[,1:3],3000),pred[,3])
 benchmark_data=pred_data[,1:4]
 benchmark_data[,4]=benchmark_data[,3]
 
-rez=sapply(seq(0.2,0.65,by=0.05),function(i)
+tresh_rez=sapply(seq(0.1,0.4,by=0.05),function(i)
 {
   print(i)
 pred_rez=ddply(pred_data,.(user),function(x)
@@ -61,8 +61,8 @@ benchmark_rez=ddply(benchmark_data,.(user),function(x)
 })
 
 #mine
-rez=(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
-print(rez)
+ben_rez=(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
+print(ben_rez)
 })
 #random
 mapk(200,head(db[,c(match(c('event','user','interested'),colnames(db)))],500),cbind(head(db[,c(match(c('event','user'),colnames(db)))],500),rez2))
@@ -102,7 +102,7 @@ pred_data=cbind(db_test[,1:3],pred_test[,3])
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.41));
+  data.frame(event=output(x,.2));
 })
 colnames(pred_data)=c('User','Events')
 pred_data$Events=gsub("[[:space:]]*$","",pred_data$Events)
