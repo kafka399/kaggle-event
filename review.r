@@ -25,7 +25,9 @@ db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))#factor(round(db$time
 
 db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][1]))
 
-interested=db[,c(match(c('interested','not_interested','invited','birthyear','gender'
+train_nr=sample(1:nrow(db),12000)
+
+interested=db[train_nr,c(match(c('interested','not_interested','invited','birthyear','gender'
                          ,'timezone'
                               #,'locale'
                          ,'time_diff'
@@ -38,36 +40,82 @@ interested=db[,c(match(c('interested','not_interested','invited','birthyear','ge
 rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE)#,ntree=300,nodesize=1)
 #rez=gbm(interested ~ .,data=interested)
 #summary(rez)
-pred_data=head(db[,c(match(c('event','user','interested','invited','locale','birthyear','gender','timezone','time_diff'),
-                           colnames(db)) ,grep('c_',colnames(db)))],3000)
+pred_data=db[-train_nr,c(match(c('event','user','interested','invited','locale','birthyear','gender','timezone','time_diff'),
+                           colnames(db)) ,grep('c_',colnames(db)))]
 
 pred=predict(rez,pred_data[,-3],type='prob')
 
-pred_data=cbind(head(pred_data[,1:3],3000),pred[,3])
+pred_data=cbind(pred_data[,1:3],pred[,3])
 
 benchmark_data=pred_data[,1:4]
 benchmark_data[,4]=benchmark_data[,3]
 
-tresh_rez=sapply(seq(0.1,0.4,by=0.05),function(i)
-{
-  print(i)
+#tresh_rez=sapply(seq(0.1,0.4,by=0.05),function(i)
+#{
+#  print(i)
 pred_rez=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,i));
+  data.frame(event=output(x,.1));
 })
 benchmark_rez=ddply(benchmark_data,.(user),function(x)
 {
-  data.frame(event=output(x,i));
+  data.frame(event=output(x,2));
 })
+(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
+
+
+res=sapply(strsplit(as.character((pred_rez[,2])),' '),function(x){
+  
+res=sapply(x,function(y)
+{
+  y %in%as.character(yes$event[which(yes$populiarity>.95)])
+
+
+})
+  if(length(which(res))>0)
+       cbind(x[which(res)],x[which(!res)])
+  else
+    x
+})
+
+res=cbind(pred_rez[,1],sapply(res,function(x){
+  rez=paste(x,collapse=' ')
+  if(nchar(rez)==0)
+    rez=' '
+  rez
+  }))
+
+
+
+(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(res[,2]),' ')))
+
+sapply(as.character(yes$event[which(yes$populiarity>.95)]),function(x){
+ (x %in%pred_rez) 
+}  )
+
 
 #mine
 ben_rez=(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
-print(ben_rez)
-})
+#print(ben_rez)
+#})
 #random
 mapk(200,head(db[,c(match(c('event','user','interested'),colnames(db)))],500),cbind(head(db[,c(match(c('event','user'),colnames(db)))],500),rez2))
 
 #test
+
+final_model=db[,c(match(c('interested','not_interested','invited','birthyear','gender'
+                                 ,'timezone'
+                                 #,'locale'
+                                 ,'time_diff'
+),colnames(db))
+                         ,grep('c_',colnames(db))
+)]
+#interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
+#require(gbm)
+
+final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=300,nodesize=1)
+
+
 db_test=merge((test),user,by.y=1,by.x=1)
 db_test=merge(db_test,event,by.y=1,by.x=2)
 #####data preparation######
@@ -97,13 +145,36 @@ test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
 #test_selected=test_selected[(which(!test_selected$timezone%in%levels(test_selected$timezone)[which(!levels(test_selected$timezone)%in%levels(interested$timezone))])),]
 #test_selected$timezone=droplevels(test_selected$timezone)
 
-pred_test=predict(rez,test_selected,type='prob')
+pred_test=predict(final_model,test_selected,type='prob')
 pred_data=cbind(db_test[,1:3],pred_test[,3])
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.15));
+  data.frame(event=output(x,.1));
 })
+
+res=sapply(strsplit(as.character((pred_data[,2])),' '),function(x){
+  
+  res=sapply(x,function(y)
+  {
+    y %in%as.character(yes$event[which(yes$populiarity>.95)])
+    
+    
+  })
+  if(length(which(res))>0)
+    cbind(x[which(res)],x[which(!res)])
+  else
+    x
+})
+
+res=cbind(pred_data[,1],sapply(res,function(x){
+  rez=paste(x,collapse=' ')
+  if(nchar(rez)==0)
+    rez=' '
+  rez
+}))
+
+pred_data=res
 colnames(pred_data)=c('User','Events')
 pred_data$Events=gsub("[[:space:]]*$","",pred_data$Events)
 write.csv2(pred_data,'result.csv',row.names=FALSE,quote=FALSE)
