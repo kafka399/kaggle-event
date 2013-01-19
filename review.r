@@ -25,7 +25,7 @@ db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))#factor(round(db$time
 
 db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][1]))
 
-train_nr=sample(1:nrow(db),12000)
+train_nr=sample(1:nrow(db),10000)
 
 interested=db[train_nr,c(match(c('interested','not_interested','invited','birthyear','gender'
                          ,'timezone'
@@ -59,7 +59,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 })
 benchmark_rez=ddply(benchmark_data,.(user),function(x)
 {
-  data.frame(event=output(x,2));
+  data.frame(event=output(x));
 })
 (mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
 
@@ -98,8 +98,6 @@ sapply(as.character(yes$event[which(yes$populiarity>.95)]),function(x){
 ben_rez=(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
 #print(ben_rez)
 #})
-#random
-mapk(200,head(db[,c(match(c('event','user','interested'),colnames(db)))],500),cbind(head(db[,c(match(c('event','user'),colnames(db)))],500),rez2))
 
 #test
 
