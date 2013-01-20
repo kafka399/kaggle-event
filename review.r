@@ -40,22 +40,21 @@ interested=db[train_nr,c(match(c('interested','not_interested','invited','birthy
 rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE)#,ntree=300,nodesize=1)
 #rez=gbm(interested ~ .,data=interested)
 #summary(rez)
-pred_data=db[-train_nr,c(match(c('event','user','interested','invited','locale','birthyear','gender','timezone','time_diff'),
+pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested','invited','locale','birthyear','gender','timezone','time_diff'),
                            colnames(db)) ,grep('c_',colnames(db)))]
 
-pred=predict(rez,pred_data[,-3],type='prob')
+pred=predict(rez,pred_data[,-4],type='prob')
+
+benchmark_data=pred_data[,1:4]
+benchmark_data[,4]=(benchmark_data[,3]+benchmark_data[,4])/2+.5
 
 pred_data=cbind(pred_data[,1:3],pred[,3])
 
-benchmark_data=pred_data[,1:4]
-benchmark_data[,4]=benchmark_data[,3]
 
-#tresh_rez=sapply(seq(0.1,0.4,by=0.05),function(i)
-#{
-#  print(i)
+
 pred_rez=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.1));
+  data.frame(event=output(x,.00001));
 })
 benchmark_rez=ddply(benchmark_data,.(user),function(x)
 {
@@ -144,35 +143,16 @@ test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
 #test_selected$timezone=droplevels(test_selected$timezone)
 
 pred_test=predict(final_model,test_selected,type='prob')
-pred_data=cbind(db_test[,1:3],pred_test[,3])
+pred_data=cbind(db_test[,1:3],pred_test[,3])#isskirti ir isrusiuoti
+
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.1));
+  data.frame(event=output(x,.0001));
 })
 
-res=sapply(strsplit(as.character((pred_data[,2])),' '),function(x){
-  
-  res=sapply(x,function(y)
-  {
-    y %in%as.character(yes$event[which(yes$populiarity>.95)])
-    
-    
-  })
-  if(length(which(res))>0)
-    cbind(x[which(res)],x[which(!res)])
-  else
-    x
-})
 
-res=cbind(pred_data[,1],sapply(res,function(x){
-  rez=paste(x,collapse=' ')
-  if(nchar(rez)==0)
-    rez=' '
-  rez
-}))
-
-pred_data=res
+#pred_data=res
 colnames(pred_data)=c('User','Events')
 pred_data$Events=gsub("[[:space:]]*$","",pred_data$Events)
 write.csv2(pred_data,'result.csv',row.names=FALSE,quote=FALSE)
