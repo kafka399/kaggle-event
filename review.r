@@ -89,7 +89,8 @@ final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final
 
 
 db_test=merge((test),user,by.y=1,by.x=1)
-db_test=merge(db_test,event,by.y=1,by.x=2)
+db_test=merge(db_test,event_merge,by.y=1,by.x=2)
+#db_test=merge(db_test,event,by.y=1,by.x=2)
 #####data preparation######
 
 
@@ -132,7 +133,7 @@ pred_data=cbind(db_test[,1:3],pred_test[,3])#isskirti ir isrusiuoti
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,-.0001));
+  data.frame(event=output(x,.0001));
 })
 
 
