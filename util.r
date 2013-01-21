@@ -20,20 +20,15 @@ apk <- function(k, actual, predicted)
 {
   score <- 0.0
   cnt <- 0.0
-  len_pred = length(predicted)
-  len_actual = length(actual)
-  
-  for (i in 1:min(k,len_pred))
+  for (i in 1:min(k,length(predicted)))
   {
-    
-    if (predicted[i] %in% actual &&!(predicted[i] %in% predicted[0:(i-1)]))
+    if (predicted[i] %in% actual && !(predicted[i] %in% predicted[0:(i-1)]))
     {
       cnt <- cnt + 1
       score <- score + cnt/i 
     }
   }
-  score <- score / min(len_actual, k)
-  
+  score <- score / min(length(actual), k)
   score
 }
 
