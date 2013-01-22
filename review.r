@@ -31,7 +31,7 @@ db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))#factor(round(db$time
 
 db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][1]))
 
-#db$invited=factor(db$invited)
+db$invited=factor(db$invited)
 
 unique_users=unique(db$user)#2015
 set.seed(333)
@@ -106,7 +106,7 @@ db_test$time_diff=as.numeric(difftime(db_test$start_time,db_test$timestamp,units
 
 #db_test$time_diff=log(db_test$time_diff)
 
-#db_test$invited=factor(db_test$invited)
+db_test$invited=factor(db_test$invited)
 
 db_test$timezone[which(is.na(db_test$timezone))]=0
 db_test$timezone=cut(round(db_test$timezone/60),breaks=seq(-14,14,2))#factor(round(db_test$timezone/60))
