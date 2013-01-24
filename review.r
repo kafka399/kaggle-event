@@ -91,7 +91,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 {
   data.frame(event=output(x,.29));
 })
-print(z)
+#print(z)
 print(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
 #}
 #}
@@ -111,11 +111,11 @@ final_model=db[,c(match(c('interested','not_interested',
 #interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
 #require(gbm)
 set.seed(333)
-final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+#final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
 
-final_cols= rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30][which(rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30]%in%rownames(importance(final_model)[order(randomForest::importance(final_model)[,4],decreasing=TRUE),])[1:30])]
+#final_cols= rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30][which(rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30]%in%rownames(importance(final_model)[order(randomForest::importance(final_model)[,4],decreasing=TRUE),])[1:30])]
 
-final_model=db[,c(match(c('interested','not_interested',final_cols),colnames(db)))]
+final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
 final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
@@ -170,7 +170,7 @@ db_test$timezone=cut(round(db_test$timezone/60),breaks=seq(-14,14,2))#factor(rou
 
 db_test$locale=factor(sapply(as.character(db_test$locale),function(x)strsplit(x,"_")[[1]][1]))
 db_test$joinedAt=as.numeric(as.POSIXct(as.character((db_test$joinedAt)))-as.POSIXct('2000-01-01'))
-test_selected=db_test[,match(final_cols,colnames(db_test))]
+test_selected=db_test[,match(cols,colnames(db_test))]
 
 #test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
 #                                 ,'timezone'#,'locale'
