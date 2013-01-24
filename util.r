@@ -1,10 +1,10 @@
 output=function(y,treshold=.2){
   y=y[order(y[,4],decreasing=TRUE),]
-  rez=paste((ifelse(y[,4]>treshold,y[,1],'')),collapse=' ')
+  result=paste((ifelse(y[,4]>treshold,y[,1],'')),collapse=' ')
   
-  if(nchar(rez)==0)
-    rez=' '
-  rez
+  if(nchar(result)==0)
+    result=' '
+  result
 }
 
 #' Compute the average precision at k
@@ -20,12 +20,14 @@ apk <- function(k, actual, predicted)
 {
   score <- 0.0
   cnt <- 0.0
+  
   for (i in 1:min(k,length(predicted)))
   {
     if (predicted[i] %in% actual && !(predicted[i] %in% predicted[0:(i-1)]))
     {
       cnt <- cnt + 1
       score <- score + cnt/i 
+      
     }
   }
   score <- score / min(length(actual), k)

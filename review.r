@@ -8,6 +8,9 @@ event=read.csv('data/events.csv')
 user=read.csv('data/users.csv')
 train=read.csv('train.csv')
 test=read.csv('test.csv')
+friends=read.csv('data/user_friends.csv')
+#test=xts(test[,-4],order.by=as.POSIXct(as.character(test$timestamp)))
+#train=xts(train[,-4],order.by=as.POSIXct(as.character(train$timestamp)))
 
 db=merge((train),user,by.y=1,by.x=1)
 source('populiarity.r')
@@ -27,33 +30,48 @@ db$time_diff=as.numeric(difftime(db$start_time,db$timestamp,units=c('hours')))
 #db$time_diff=log(db$time_diff)
 
 db$timezone[which(is.na(db$timezone))]=0
-db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))#factor(round(db$timezone/60),levels)
+db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))
+#factor(round(db$timezone/60),levels)
 
 db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][1]))
 
 db$invited=factor(db$invited)
-
+db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 unique_users=unique(db$user)#2015
 set.seed(333)
-train_nr=unique_users[sample(1:length(unique_users),1700)]#
+train_nr=unique_users[sample(1:length(unique_users),1338)]#
 train_nr=which(db$user %in%train_nr)
-interested=db[train_nr,c(match(c('interested','not_interested','invited','birthyear','gender'
+#for(z in seq(32,40,by=2)){
+interested=db[train_nr,c(match(c('interested','not_interested',
+                                 'invited','birthyear','gender'
                          ,'timezone'
-                              #,'locale'
+                  #            ,'locale'
                          ,'populiarity'
                          ,'time_diff'
+                        ,'friends'
+                        ,'friends_yes','friends_no','friends_maybe','joinedAt'
                          ),colnames(db))
                  ,grep('c_',colnames(db))
                  )]
+set.seed(333)
+features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+
+cols= rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:30][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:30]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:30])]
+#cols=rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:22]
+interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
 #interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
 #require(gbm)
 set.seed(333)
 rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
 #rez=gbm(interested ~ .,data=interested)
 #summary(rez)
-pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested','invited','locale','populiarity','birthyear','gender','timezone','time_diff'),
+pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested','invited'#,'locale'
+                                 ,'friends'
+                                 ,'friends_yes'#,'friends_no'#,'friends_maybe'
+                                 ,'populiarity','birthyear','gender','timezone','time_diff'),
                            colnames(db)) ,grep('c_',colnames(db)))]
-
+pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested',
+                                 cols),colnames(db)))]
 pred=predict(rez,pred_data[,-4],type='prob')
 
 benchmark_data=pred_data[,1:4]
@@ -63,36 +81,75 @@ pred_data=cbind(pred_data[,1:3],pred[,3])
 
 
 
-pred_rez=ddply(pred_data,.(user),function(x)
-{
-  data.frame(event=output(x,-.00001));
-})
+
 benchmark_rez=ddply(benchmark_data,.(user),function(x)
 {
-  data.frame(event=output(x,.49));
+  data.frame(event=output(x,.99));
 })
-(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
-
-
+#for(i in seq(.25,.35,by=.01)){
+pred_rez=ddply(pred_data,.(user),function(x)
+{
+  data.frame(event=output(x,.29));
+})
+print(z)
+print(mapk(200,strsplit(as.character(benchmark_rez[,2]),' '),strsplit(as.character(pred_rez[,2]),' ')))
+#}
+#}
 #test
 
-final_model=db[,c(match(c('interested','not_interested','invited','birthyear','gender'
-                                 ,'timezone'
-                                 ,'populiarity'
-                                 #,'locale'
-                                 ,'time_diff'),colnames(db)),grep('c_',colnames(db))
+final_model=db[,c(match(c('interested','not_interested',
+                          'invited','birthyear','gender'
+                          ,'timezone'
+                          #,'locale'
+                          ,'populiarity'
+                          ,'time_diff'
+                          ,'friends'
+                          ,'friends_yes','friends_no','friends_maybe','joinedAt'
+                          
+                          ),colnames(db)),grep('c_',colnames(db))
 )]
 #interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
 #require(gbm)
 set.seed(333)
-final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=300,nodesize=1)
+final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+
+final_cols= rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30][which(rownames(importance(final_model)[order(randomForest::importance(final_model)[,5],decreasing=TRUE),])[1:30]%in%rownames(importance(final_model)[order(randomForest::importance(final_model)[,4],decreasing=TRUE),])[1:30])]
+
+final_model=db[,c(match(c('interested','not_interested',final_cols),colnames(db)))]
+
+set.seed(333)
+final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
 
 
 db_test=merge((test),user,by.y=1,by.x=1)
 db_test=merge(db_test,event_merge,by.y=1,by.x=2)
 #db_test=merge(db_test,event,by.y=1,by.x=2)
 #####data preparation######
-
+attend_yes=apply((db_test[,1:2]),1,function(x){
+  fnd=strsplit(as.character(friends[which(friends$user==x[2]),]$friends),' ')[[1]]
+  length(which(fnd %in% strsplit(as.character(attend[(which(attend$event%in%x[1])),]$yes),' ')[[1]]))/length(fnd)
+  #print(paste(fnd,att))        
+  #print(str(x))
+})
+attend_no=apply((db_test[,1:2]),1,function(x){
+  fnd=strsplit(as.character(friends[which(friends$user==x[2]),]$friends),' ')[[1]]
+  length(which(fnd %in% strsplit(as.character(attend[(which(attend$event%in%x[1])),]$no),' ')[[1]]))/length(fnd)
+  #print(paste(fnd,att))        
+  #print(str(x))
+})
+attend_maybe=apply((db_test[,1:2]),1,function(x){
+  fnd=strsplit(as.character(friends[which(friends$user==x[2]),]$friends),' ')[[1]]
+  length(which(fnd %in% strsplit(as.character(attend[(which(attend$event%in%x[1])),]$maybe),' ')[[1]]))/length(fnd)
+  #print(paste(fnd,att))        
+  #print(str(x))
+})
+attend_invited=apply((db_test[,1:2]),1,function(x){
+  fnd=strsplit(as.character(friends[which(friends$user==x[2]),]$friends),' ')[[1]]
+  length(which(fnd %in% strsplit(as.character(attend[(which(attend$event%in%x[1])),]$invited),' ')[[1]]))/length(fnd)
+  #print(paste(fnd,att))        
+  #print(str(x))
+})
+db_test=cbind(db_test,friends=attend_invited,friends_yes=attend_yes,friends_no=attend_no,friends_maybe=attend_maybe)
 
 #db_test=db_test[grep('^\\d{4}',db_test$birthyear),]
 db_test$birthyear[-(grep('^\\d{4}',db_test$birthyear))]=1977
@@ -112,13 +169,19 @@ db_test$timezone[which(is.na(db_test$timezone))]=0
 db_test$timezone=cut(round(db_test$timezone/60),breaks=seq(-14,14,2))#factor(round(db_test$timezone/60))
 
 db_test$locale=factor(sapply(as.character(db_test$locale),function(x)strsplit(x,"_")[[1]][1]))
+db_test$joinedAt=as.numeric(as.POSIXct(as.character((db_test$joinedAt)))-as.POSIXct('2000-01-01'))
+test_selected=db_test[,match(final_cols,colnames(db_test))]
 
-test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
-                                 ,'timezone'#,'locale'
-                                 
-                                 ,'populiarity'
-                                 ),colnames(db_test))
-           ,grep('c_',colnames(db_test)))]
+#test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
+#                                 ,'timezone'#,'locale'
+#                                 ,'friends'
+#                                 ,'friends_yes','friends_no','friends_maybe'
+#                                 ,'populiarity'
+#                                 ),colnames(db_test))
+#           ,grep('c_',colnames(db_test)))]
+
+#pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested',
+ #                                cols),colnames(db)))]
 
 #locate 
 #test_selected=test_selected[(which(!test_selected$locale%in%levels(test_selected$locale)[which(!levels(test_selected$locale)%in%levels(interested$locale))])),]
