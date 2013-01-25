@@ -1,9 +1,0 @@
-attendees + event - not worth of effort, because very small part of data is provided. 
-
-user location + evet location
-
-event populiatiry
-
-infer user place from other events
-
-user id as feature
