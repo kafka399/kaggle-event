@@ -46,21 +46,30 @@ db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][
 db$invited=factor(db$invited)
 db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 db$gender=factor(db$gender)
+db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
+#db$month=factor(format(db$start_time,'%m'))
 
+#db$c_6[which(db$c_6>300)]=median(db$c_6)
+#db$c_1[which(db$c_1>2000)]=median(db$c_1)
+#db$c_52[which(db$c_52>200)]=median(db$c_52)
+#db$c_5[which(db$c_5>1200)]=median(db$c_5)
+#db$c_7[which(db$c_7>1200)]=median(db$c_7)
 #location
 tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long))
 temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
 
 db=data.frame(db,distance=db$lng)
-db$distance=median(temp)
+db$distance=100000000#median(temp)
 db$distance[tmp]=temp
 unique_users=unique(db$user)#2015
 set.seed(333)
 train_nr=unique_users[sample(1:length(unique_users),1338)]#
 train_nr=which(db$user %in%train_nr)
-for(z in seq(5,65,by=5)){
-interested=db[train_nr,c(match(c('interested','not_interested',#'distance',
+#for(z in seq(5,45,by=5)){
+interested=db[train_nr,c(match(c('interested','not_interested','distance',
                                  'invited','birthyear','gender'
+                    #             ,'user_id'
+                     #            ,'month'
                          ,'timezone'
                               ,'locale'
                          ,'populiarity'
@@ -72,9 +81,11 @@ interested=db[train_nr,c(match(c('interested','not_interested',#'distance',
                  )]
 set.seed(333)
 features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
-
-#cols= rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
-cols=rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]
+z=30
+cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
+#cols=rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:22]
+#23features [,5]==.70669
+#30 features [,4+5]=.7046811
 interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
 #interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
 #require(gbm)
@@ -107,8 +118,8 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#.2830294
-}
+#0.7046811
+#}
 #}
 #test
 
@@ -195,10 +206,13 @@ db_test$joinedAt=as.numeric(as.POSIXct(as.character((db_test$joinedAt)))-as.POSI
 tmp=which(!is.na(db_test$lat)&!is.na(db_test$lng)&!is.na(db_test$user_lat)&!is.na(db_test$user_long))
 temp=distVincentyEllipsoid(p1 = cbind(db_test$user_long,db_test$user_lat)[tmp,], p2 = cbind(db_test$lng,db_test$lat)[tmp,])
 
-db_test=data.frame(db_test,distance=median(temp))
-#db_test$distance=median(temp)
+db_test=data.frame(db_test,distance=db_test$lng)
+db_test$distance=100000000
 db_test$distance[tmp]=temp
+db_test$gender=factor(db_test$gender)
+tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
 
+#db_test$month=tmp[(length(db$start_time)+1):length(tmp)]
 test_selected=db_test[,match(cols,colnames(db_test))]
 
 #test_selected=db_test[,c(match(c('invited','birthyear','gender','time_diff'
