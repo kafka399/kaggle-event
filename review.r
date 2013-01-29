@@ -46,7 +46,7 @@ db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][
 db$invited=factor(db$invited)
 db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 db$gender=factor(db$gender)
-db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
+#db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
 #db$month=factor(format(db$start_time,'%m'))
 
 #db$c_6[which(db$c_6>300)]=median(db$c_6)
@@ -59,7 +59,7 @@ tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long)
 temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
 
 db=data.frame(db,distance=db$lng)
-db$distance=100000000#median(temp)
+db$distance=100000#median(temp)
 db$distance[tmp]=temp
 unique_users=unique(db$user)#2015
 set.seed(333)
@@ -118,7 +118,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#0.7046811
+#0.7152448
 #}
 #}
 #test
@@ -207,7 +207,7 @@ tmp=which(!is.na(db_test$lat)&!is.na(db_test$lng)&!is.na(db_test$user_lat)&!is.n
 temp=distVincentyEllipsoid(p1 = cbind(db_test$user_long,db_test$user_lat)[tmp,], p2 = cbind(db_test$lng,db_test$lat)[tmp,])
 
 db_test=data.frame(db_test,distance=db_test$lng)
-db_test$distance=100000000
+db_test$distance=0
 db_test$distance[tmp]=temp
 db_test$gender=factor(db_test$gender)
 tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
