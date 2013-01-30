@@ -59,7 +59,7 @@ tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long)
 temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
 
 db=data.frame(db,distance=db$lng)
-db$distance=100000#median(temp)
+db$distance=0#median(temp)
 db$distance[tmp]=temp
 unique_users=unique(db$user)#2015
 set.seed(333)
@@ -118,7 +118,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#0.7152448
+#0.7247446122
 #}
 #}
 #test
@@ -178,7 +178,7 @@ attend_invited_final=apply((db_test[,1:2]),1,function(x){
 db_test=cbind(db_test,friends=attend_invited_final,friends_yes=attend_yes_final,friends_no=attend_no_final,friends_maybe=attend_maybe_final)
 
 #db_test=db_test[grep('^\\d{4}',db_test$birthyear),]
-db_test$birthyear[-(grep('^\\d{4}',db_test$birthyear))]=1977
+db_test$birthyear[-(grep('^\\d{4}',db_test$birthyear))]=mean(db$birthyear)#1977
 db_test$birthyear=as.numeric(as.character(db_test$birthyear))
 db_test$start_time=as.POSIXct(strptime(as.character((db_test$start_time)),'%Y-%m-%dT%H:%M:%S'),tz='UTC')
 db_test$timestamp=as.POSIXct(strptime(as.character((db_test$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
