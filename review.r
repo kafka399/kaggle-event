@@ -61,12 +61,20 @@ temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbin
 db=data.frame(db,distance=db$lng)
 db$distance=0#median(temp)
 db$distance[tmp]=temp
+
+#user's engadement in events -- front looking feature
+#db$frequency=apply(db,1,function(x){ 
+#  y=as.numeric(difftime(db[which(db$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
+#  if(length(y)==0) return(0)
+#  else length(which(y<0))
+#})/db$joinedAt
+
 unique_users=unique(db$user)#2015
 set.seed(333)
 train_nr=unique_users[sample(1:length(unique_users),1338)]#
 train_nr=which(db$user %in%train_nr)
-#for(z in seq(5,45,by=5)){
-interested=db[train_nr,c(match(c('interested','not_interested','distance',
+
+interested=db[train_nr,c(match(c('interested','not_interested','distance',#'frequency',
                                  'invited','birthyear','gender'
                     #             ,'user_id'
                      #            ,'month'
@@ -81,8 +89,10 @@ interested=db[train_nr,c(match(c('interested','not_interested','distance',
                  )]
 set.seed(333)
 features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+#for(z in seq(20,3,by=5)){
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
+#cols=cols[1:23]
 #cols=rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:22]
 #23features [,5]==.70669
 #30 features [,4+5]=.7046811
@@ -91,6 +101,12 @@ interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db
 #require(gbm)
 set.seed(333)
 rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+#set.seed(33)
+#rez1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+#set.seed(3)
+#rez2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+
+#rez=combine(rez,rez1,rez2)
 #rez=gbm(interested ~ .,data=interested)
 #summary(rez)
 #pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested','invited'#,'locale'
@@ -119,7 +135,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
 #0.7247446122
-#}
+}
 #}
 #test
 
@@ -144,8 +160,15 @@ print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),
 final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
-final_model=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
 
+set.seed(33)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+
+set.seed(3)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+
+final_model=combine(final_model3,final_model1,final_model2)
 
 db_test=merge((test),user,by.y=1,by.x=1)
 db_test=merge(db_test,event_merge,by.y=1,by.x=2,all.x=TRUE)
@@ -210,7 +233,21 @@ db_test=data.frame(db_test,distance=db_test$lng)
 db_test$distance=0
 db_test$distance[tmp]=temp
 db_test$gender=factor(db_test$gender)
-tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
+
+db_test$frequency=apply(db_test,1,function(x){
+  y=as.numeric(difftime(db_test[which(db_test$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
+  if(length(y)==0)
+    return(0)
+  else
+    length(which(y<0))
+  
+})/db_test$joinedAt
+
+#tmp=(aggregate(db$user,list(db$user),length))
+#db_test$frequency=unlist(apply((db_test),1,function(x){i=tmp[which(tmp[,1]%in%x[2]),2];ifelse(length(i)>0,i,0)}))/db_test$joinedAt
+
+
+#tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
 
 #db_test$month=tmp[(length(db$start_time)+1):length(tmp)]
 test_selected=db_test[,match(cols,colnames(db_test))]
