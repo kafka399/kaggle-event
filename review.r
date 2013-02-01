@@ -47,7 +47,7 @@ db$invited=factor(db$invited)
 db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 db$gender=factor(db$gender)
 #db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
-#db$month=factor(format(db$start_time,'%m'))
+db$hour=factor(format(db$timestamp,'%H'))
 
 #db$c_6[which(db$c_6>300)]=median(db$c_6)
 #db$c_1[which(db$c_1>2000)]=median(db$c_1)
@@ -75,6 +75,8 @@ train_nr=unique_users[sample(1:length(unique_users),1338)]#
 train_nr=which(db$user %in%train_nr)
 
 interested=db[train_nr,c(match(c('interested','not_interested','distance',#'frequency',
+                      #           'month',
+                      #           'hour',
                                  'invited','birthyear','gender'
                     #             ,'user_id'
                      #            ,'month'
@@ -88,10 +90,11 @@ interested=db[train_nr,c(match(c('interested','not_interested','distance',#'freq
                  ,grep('c_',colnames(db))
                  )]
 set.seed(333)
-features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150,mtry=5)#,nodesize=1)
 #for(z in seq(20,3,by=5)){
-z=30
+z=23
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
+#"time_diff", "friends", "populiarity","distance", "joinedAt", "birthyear","c_other","timezone","friends_yes"   "friends_maybe" "c_6"           "friends_no"    "c_1","locale","c_2","c_3","c_5"           "c_4"           "c_7"           "c_9"           "c_10"  
 #cols=cols[1:23]
 #cols=rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:22]
 #23features [,5]==.70669
@@ -100,7 +103,7 @@ interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db
 #interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
 #require(gbm)
 set.seed(333)
-rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150,mtry=4)#,nodesize=1)
 #set.seed(33)
 #rez1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
 #set.seed(3)
@@ -134,7 +137,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#0.7247446122
+#0.7265156
 }
 #}
 #test
@@ -160,13 +163,13 @@ print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),
 final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
-final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,mtry=4)#,ntree=500,nodesize=1)
 
 set.seed(33)
-final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,mtry=4)#,ntree=500,nodesize=1)
 
 set.seed(3)
-final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,mtry=4)#,ntree=500,nodesize=1)
 
 final_model=combine(final_model3,final_model1,final_model2)
 
@@ -234,14 +237,16 @@ db_test$distance=0
 db_test$distance[tmp]=temp
 db_test$gender=factor(db_test$gender)
 
-db_test$frequency=apply(db_test,1,function(x){
-  y=as.numeric(difftime(db_test[which(db_test$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
-  if(length(y)==0)
-    return(0)
-  else
-    length(which(y<0))
-  
-})/db_test$joinedAt
+#db_test$frequency=apply(db_test,1,function(x){
+#  y=as.numeric(difftime(db_test[which(db_test$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
+#  if(length(y)==0)
+#    return(0)
+#  else
+#    length(which(y<0))
+#  
+#})/db_test$joinedAt
+
+db_test$hour=factor(format(db_test$timestamp,'%H'))
 
 #tmp=(aggregate(db$user,list(db$user),length))
 #db_test$frequency=unlist(apply((db_test),1,function(x){i=tmp[which(tmp[,1]%in%x[2]),2];ifelse(length(i)>0,i,0)}))/db_test$joinedAt
