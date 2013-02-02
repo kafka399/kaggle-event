@@ -46,6 +46,8 @@ db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][
 db$invited=factor(db$invited)
 db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 db$gender=factor(db$gender)
+#db$hour=cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)#factor(format(db$timestamp,'%H'))#
+
 #db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
 #db$month=factor(format(db$start_time,'%m'))
 
@@ -76,6 +78,7 @@ train_nr=which(db$user %in%train_nr)
 
 interested=db[train_nr,c(match(c('interested','not_interested','distance',#'frequency',
                                  'invited','birthyear','gender'
+                       #          ,'hour'
                     #             ,'user_id'
                      #            ,'month'
                          ,'timezone'
@@ -92,28 +95,12 @@ features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interest
 #for(z in seq(20,3,by=5)){
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
-#cols=cols[1:23]
-#cols=rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:22]
-#23features [,5]==.70669
-#30 features [,4+5]=.7046811
+#cols=c("time_diff","friends",  "populiarity",   "joinedAt", "distance", "birthyear","c_other",  "friends_yes","timezone", "friends_maybe" ,"c_6", "friends_no","locale","c_1","c_2","c_52","c_3","c_5","c_4", "c_7", "c_9", "c_10","c_34")
+
 interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
-#interested[,grep('c_',colnames(interested))]=log(interested[,grep('c_',colnames(interested))])
-#require(gbm)
 set.seed(333)
 rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
-#set.seed(33)
-#rez1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
-#set.seed(3)
-#rez2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
 
-#rez=combine(rez,rez1,rez2)
-#rez=gbm(interested ~ .,data=interested)
-#summary(rez)
-#pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested','invited'#,'locale'
-#                                 ,'friends'
-#                                 ,'friends_yes'#,'friends_no'#,'friends_maybe'
-#                                 ,'populiarity','birthyear','gender','timezone','time_diff'),
-#                           colnames(db)) ,grep('c_',colnames(db)))]
 pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested',cols),colnames(db)))]
 pred=predict(rez,pred_data[,-4],type='prob')
 
@@ -246,6 +233,7 @@ db_test$frequency=apply(db_test,1,function(x){
 #tmp=(aggregate(db$user,list(db$user),length))
 #db_test$frequency=unlist(apply((db_test),1,function(x){i=tmp[which(tmp[,1]%in%x[2]),2];ifelse(length(i)>0,i,0)}))/db_test$joinedAt
 
+#db_test$hour=cut(as.numeric(format(db_test$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)#factor(format(db$timestamp,'%H'))#
 
 #tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
 
