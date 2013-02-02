@@ -49,6 +49,7 @@ db$gender=factor(db$gender)
 db$weekdays=factor(format(db$timestamp,'%a'))#cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)##
 
 db$start_hour=factor(format(db$start_time,'%H'))
+#db$start_weekday=factor(format(db$start_time,'%a'))
 #db$monthday=factor(format(db$timestamp,'%d'))
 #db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
 #db$month=factor(format(db$start_time,'%m'))
@@ -125,7 +126,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#0.7195056
+#0.7199335
 }
 #}
 #test
