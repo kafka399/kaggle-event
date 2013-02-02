@@ -46,7 +46,7 @@ db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][
 db$invited=factor(db$invited)
 db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-01-01'))
 db$gender=factor(db$gender)
-#db$hour=cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)#factor(format(db$timestamp,'%H'))#
+db$weekdays=factor(format(db$timestamp,'%a'))#cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)##
 
 #db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
 #db$month=factor(format(db$start_time,'%m'))
@@ -95,6 +95,7 @@ features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interest
 #for(z in seq(20,3,by=5)){
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
+cols=c(cols,'weekdays')
 #cols=c("time_diff","friends",  "populiarity",   "joinedAt", "distance", "birthyear","c_other",  "friends_yes","timezone", "friends_maybe" ,"c_6", "friends_no","locale","c_1","c_2","c_52","c_3","c_5","c_4", "c_7", "c_9", "c_10","c_34")
 
 interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
@@ -234,7 +235,7 @@ db_test$frequency=apply(db_test,1,function(x){
 #db_test$frequency=unlist(apply((db_test),1,function(x){i=tmp[which(tmp[,1]%in%x[2]),2];ifelse(length(i)>0,i,0)}))/db_test$joinedAt
 
 #db_test$hour=cut(as.numeric(format(db_test$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)#factor(format(db$timestamp,'%H'))#
-
+db_test$weekdays=factor(format(db_test$timestamp,'%a'))
 #tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
 
 #db_test$month=tmp[(length(db$start_time)+1):length(tmp)]
