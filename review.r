@@ -27,9 +27,9 @@ event_merge$populiarity=log(event_merge$populiarity+1)
 db=merge(db,event_merge,by.y=1,by.x=2)
 #####data preparation######
 
-
-db=db[grep('^\\d{4}',db$birthyear),]
+db$birthyear[-(grep('^\\d{4}',db$birthyear))]=median(as.numeric(db$birthyear[(grep('^\\d{4}',db$birthyear))]))#1977
 db$birthyear=as.numeric(as.character(db$birthyear))
+
 db$start_time=as.POSIXct(strptime(as.character((db$start_time)),'%Y-%m-%dT%H:%M:%S'),tz='UTC')
 db$timestamp=as.POSIXct(strptime(as.character((db$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
 
@@ -198,7 +198,7 @@ attend_invited_final=apply((db_test[,1:2]),1,function(x){
 db_test=cbind(db_test,friends=attend_invited_final,friends_yes=attend_yes_final,friends_no=attend_no_final,friends_maybe=attend_maybe_final)
 
 #db_test=db_test[grep('^\\d{4}',db_test$birthyear),]
-db_test$birthyear[-(grep('^\\d{4}',db_test$birthyear))]=mean(db$birthyear)#1977
+db_test$birthyear[-(grep('^\\d{4}',db_test$birthyear))]=median(db$birthyear)#1977
 db_test$birthyear=as.numeric(as.character(db_test$birthyear))
 db_test$start_time=as.POSIXct(strptime(as.character((db_test$start_time)),'%Y-%m-%dT%H:%M:%S'),tz='UTC')
 db_test$timestamp=as.POSIXct(strptime(as.character((db_test$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
@@ -232,14 +232,14 @@ db_test$distance=0
 db_test$distance[tmp]=temp
 db_test$gender=factor(db_test$gender)
 
-db_test$frequency=apply(db_test,1,function(x){
-  y=as.numeric(difftime(db_test[which(db_test$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
-  if(length(y)==0)
-    return(0)
-  else
-    length(which(y<0))
+#db_test$frequency=apply(db_test,1,function(x){
+#  y=as.numeric(difftime(db_test[which(db_test$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
+#  if(length(y)==0)
+#    return(0)
+#  else
+#    length(which(y<0))
   
-})/db_test$joinedAt
+#})/db_test$joinedAt
 
 #tmp=(aggregate(db$user,list(db$user),length))
 #db_test$frequency=unlist(apply((db_test),1,function(x){i=tmp[which(tmp[,1]%in%x[2]),2];ifelse(length(i)>0,i,0)}))/db_test$joinedAt

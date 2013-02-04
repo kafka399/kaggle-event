@@ -1,3 +1,5 @@
 *.csv
 data
 *.txt
+.Rdata
+.Rhistory
