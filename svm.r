@@ -16,8 +16,8 @@ tmp=tmp[,!colnames(tmp)%in%c('event','user')]
 
 my.grid = expand.grid(.interaction.depth = c(3,9,15), .n.trees = (3:5)*50, .shrinkage = .1)
 
-rez_svm=train(((interested-not_interested)/2+.5) ~ .,data=tmp, method = "gbm",
-              trControl=bootControl,tuneGrid = my.grid)#,scaled=FALSE, preProcess = c("center", "scale"))
+rez_svm=train(factor((interested-not_interested)/2+.5) ~ .,data=tmp, method = "svmLinear",
+              trControl=bootControl)#,tuneGrid = my.grid)#,scaled=FALSE, preProcess = c("center", "scale"))
 
 #my.grid <- expand.grid(.decay = c(0.5, 0.1), .size = c(5, 6, 7))
 #rez_nn=train(factor((interested-not_interested)/2+.5) ~ .,data=interested, method = "svm")   
@@ -29,15 +29,15 @@ nasa=predict(temp,tmp[,5:ncol(tmp)])
 tmp=pred_data
 tmp[,tail(which(as.character(sapply(pred_data,class))%in%c('integer','numeric')),-4)]=nasa
 
-pred=predict(rez_svm, newdata = tmp[,-4])
+pred_svm=predict(rez_svm, newdata = tmp[,-4])
 
-pred_rez=ddply(data.frame(pred_data[,1:3],pred),.(user),function(x)
+pred_rez_svm=ddply(data.frame(pred_data[,1:3],pred_svm),.(user),function(x)
 {
-  data.frame(event=output(x,.4));
+  data.frame(event=output(x,.5998));
 })
 #print(i)
-table(ifelse(pred>.3,1,0),benchmark_data[,4])
-print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
+table(ifelse(pred_svm>.2,1,0),benchmark_data[,4])
+print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez_svm[,2])),' ')))
 
 
 ####submit####
@@ -75,7 +75,7 @@ pred_data=cbind(db_test[,1:3],pred_test)#isskirti ir isrusiuoti
 
 pred_data=ddply(pred_data,.(user),function(x)
 {
-  data.frame(event=output(x,.6));
+  data.frame(event=output(x,.3));
 })
 
 

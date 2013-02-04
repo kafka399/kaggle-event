@@ -32,12 +32,15 @@ db=db[grep('^\\d{4}',db$birthyear),]
 db$birthyear=as.numeric(as.character(db$birthyear))
 db$start_time=as.POSIXct(strptime(as.character((db$start_time)),'%Y-%m-%dT%H:%M:%S'),tz='UTC')
 db$timestamp=as.POSIXct(strptime(as.character((db$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
-db$time_diff=as.numeric(difftime(db$start_time,db$timestamp,units=c('hours')))
+
+db$timezone[which(is.na(db$timezone))]=0
+#user_time_diff=db$timezone
+db$time_diff=as.numeric(difftime(db$start_time,db$timestamp,units=c('hours')))#-db$timezone/60
 #db$time_diff[db$time_diff<0]=.0000001
 
 #db$time_diff=log(db$time_diff)
 
-db$timezone[which(is.na(db$timezone))]=0
+
 db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))
 #factor(round(db$timezone/60),levels)
 
@@ -48,7 +51,8 @@ db$joinedAt=as.numeric(as.POSIXct(as.character((db$joinedAt)))-as.POSIXct('2000-
 db$gender=factor(db$gender)
 db$weekdays=factor(format(db$timestamp,'%a'))#cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)##
 
-db$start_hour=factor(format(db$start_time,'%H'))
+db$start_hour=factor(format(db$start_time,'%H'))#+user_time_diff*60
+#db$seeing_time=cut(as.numeric(format(db$timestamp+user_time_diff*60,'%H')),breaks=seq(from=0,to=24,by=8),right=FALSE)
 #db$start_weekday=factor(format(db$start_time,'%a'))
 #db$monthday=factor(format(db$timestamp,'%d'))
 #db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
@@ -81,6 +85,7 @@ train_nr=which(db$user %in%train_nr)
 
 interested=db[train_nr,c(match(c('interested','not_interested','distance',#'frequency',
                                  'invited','birthyear','gender'
+                        #         ,'weekdays','start_hour'
                        #          ,'hour'
                     #             ,'user_id'
                      #            ,'month'
@@ -95,7 +100,7 @@ interested=db[train_nr,c(match(c('interested','not_interested','distance',#'freq
                  )]
 set.seed(333)
 features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
-#for(z in seq(20,3,by=5)){
+#for(z in seq(6,60,by=3)){
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
 #cols=c(cols,'weekdays')
@@ -199,7 +204,7 @@ db_test$start_time=as.POSIXct(strptime(as.character((db_test$start_time)),'%Y-%m
 db_test$timestamp=as.POSIXct(strptime(as.character((db_test$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
 db_test$time_diff=as.numeric(difftime(db_test$start_time,db_test$timestamp,units=c('hours')))
 
-db_test$time_diff=as.numeric(difftime(db_test$start_time,db_test$timestamp,units=c('hours')))
+#db_test$time_diff=as.numeric(difftime(db_test$start_time,db_test$timestamp,units=c('hours')))
 #db_test$time_diff[db_test$time_diff<0]=.0000001
 
 #db_test$time_diff=log(db_test$time_diff)
@@ -207,6 +212,7 @@ db_test$time_diff=as.numeric(difftime(db_test$start_time,db_test$timestamp,units
 db_test$invited=factor(db_test$invited)
 
 db_test$timezone[which(is.na(db_test$timezone))]=0
+test_user_time_diff=db_test$timezone
 db_test$timezone=cut(round(db_test$timezone/60),breaks=seq(-14,14,2))#factor(round(db_test$timezone/60))
 
 #db_test$locale=factor(sapply(as.character(db_test$locale),function(x)strsplit(x,"_")[[1]][1]))
@@ -242,7 +248,7 @@ db_test$frequency=apply(db_test,1,function(x){
 db_test$weekdays=factor(format(db_test$timestamp,'%a'))
 #tmp=factor(c(format(db$start_time,'%m'),format(db_test$start_time,'%m')))
 db_test$start_hour=factor(format(db_test$start_time,'%H'))
-
+db_test$seeing_time=cut(as.numeric(format(db_test$timestamp+test_user_time_diff*60,'%H')),breaks=seq(from=0,to=24,by=8),right=FALSE)
 #db_test$month=tmp[(length(db$start_time)+1):length(tmp)]
 test_selected=db_test[,match(cols,colnames(db_test))]
 
