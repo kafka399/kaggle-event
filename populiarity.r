@@ -1,7 +1,7 @@
 
 yes= data.frame(event=as.character(attend[,1]),populiarity=sapply(strsplit(as.character((attend[,2])),' '), length))
 #yes$populiarity=yes$populiarity#(cut(log(yes$populiarity+1),breaks=seq(0,12,by=4),right=FALSE))
-friend_count=data.frame(user=as.character(friends[,1]),friends_count=sapply(strsplit(as.character((friends[,2])),' '), length))
+#friend_count=data.frame(user=as.character(friends[,1]),friends_count=sapply(strsplit(as.character((friends[,2])),' '), length))
 
 attend_yes=apply((db[,1:2]),1,function(x){
   fnd=strsplit(as.character(friends[which(friends$user==x[1]),]$friends),' ')[[1]]

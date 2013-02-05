@@ -16,7 +16,7 @@ tmp=tmp[,!colnames(tmp)%in%c('event','user')]
 
 my.grid = expand.grid(.interaction.depth = c(3,9,15), .n.trees = (3:5)*50, .shrinkage = .1)
 
-rez_svm=train(factor((interested-not_interested)/2+.5) ~ .,data=tmp, method = "svmLinear",
+rez_svm=train(factor((interested-not_interested)/2+.5) ~ .,data=tmp, method = "svmPoly",
               trControl=bootControl)#,tuneGrid = my.grid)#,scaled=FALSE, preProcess = c("center", "scale"))
 
 #my.grid <- expand.grid(.decay = c(0.5, 0.1), .size = c(5, 6, 7))

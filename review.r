@@ -21,7 +21,7 @@ friends=read.csv('data/user_friends.csv')
 
 db=merge((train),user,by.y=1,by.x=1)
 source('populiarity.r')
-db=merge(db,friend_count,by.x=c('user'),by.y=c('user'))
+#db=merge(db,friend_count,by.x=c('user'),by.y=c('user'))
 db=cbind(db,friends_yes=attend_yes,friends_no=attend_no,friends_maybe=attend_maybe,friends=attend_invited)
 event_merge=merge(event,yes,by.x=1,by.y=1)
 event_merge$populiarity=log(event_merge$populiarity+1)
@@ -169,7 +169,7 @@ final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=fina
 final_model=combine(final_model3,final_model1,final_model2)
 
 db_test=merge((test),user,by.y=1,by.x=1)
-db_test=merge(db_test,nasa,by.x=c('user'),by.y=c('user'))
+#db_test=merge(db_test,nasa,by.x=c('user'),by.y=c('user'))
 db_test=merge(db_test,event_merge,by.y=1,by.x=2,all.x=TRUE)
 #db_test=merge(db_test,event,by.y=1,by.x=2)
 #####data preparation######
