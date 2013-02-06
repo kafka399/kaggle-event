@@ -8,7 +8,7 @@ event=read.csv('data/events.csv')
 #event=read.csv('data/user_friends.csv')
 user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 
-user_coor=read.csv('user_coord2.csv',stringsAsFactors=FALSE)
+user_coor=read.csv('user_coord3.csv',stringsAsFactors=FALSE)
 user=merge(user,user_coor,by.x=c('location'),by.y=c('addr'))
 #change column order
 user=data.frame(user[,-1],location=user[,1])
@@ -68,6 +68,7 @@ db$start_hour=factor(format(db$start_time,'%H'))#+user_time_diff*60
 #db$c_7[which(db$c_7>1200)]=median(db$c_7)
 #location
 db$user_long=as.numeric(db$user_long)
+db$user_lat=as.numeric(db$user_lat)
 tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long))
 temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
 
@@ -136,6 +137,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
 #0.7222197 ==> 0.7230007
+#0.7253222
 }
 #}
 #test
@@ -230,6 +232,7 @@ db_test$joinedAt=as.numeric(as.POSIXct(as.character((db_test$joinedAt)))-as.POSI
 
 #location
 db_test$user_long=as.numeric(db_test$user_long)
+db_test$user_lat=as.numeric(db_test$user_lat)
 tmp=which(!is.na(db_test$lat)&!is.na(db_test$lng)&!is.na(db_test$user_lat)&!is.na(db_test$user_long))
 temp=distVincentyEllipsoid(p1 = cbind(db_test$user_long,db_test$user_lat)[tmp,], p2 = cbind(db_test$lng,db_test$lat)[tmp,])
 
