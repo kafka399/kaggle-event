@@ -1,0 +1,9 @@
+[1] "time_diff"     "friends"       "populiarity"   "distance"      "joinedAt"      "birthyear"     "c_other"       "friends_yes"  
+ [9] "timezone"      "friends_maybe" "c_6"           "friends_no"    "c_1"           "locale"        "c_52"          "c_3"          
+[17] "c_21"          "c_2"           "c_4"           "weekdays"      "start_hour"
+
+
+0.72267
+[1] "time_diff"     "friends"       "populiarity"   "distance"      "joinedAt"      "birthyear"     "c_other"       "friends_yes"  
+ [9] "timezone"      "friends_maybe" "c_6"           "friends_no"    "c_1"           "locale"        "c_52"          "c_3"          
+[17] "c_21"          "c_2"           "c_4"           "weekdays"      "start_hour" 
