@@ -8,7 +8,7 @@ event=read.csv('data/events.csv')
 #event=read.csv('data/user_friends.csv')
 user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 
-user_coor=read.csv('~/user_coord4.csv',stringsAsFactors=FALSE)
+user_coor=read.csv('user_coord4.csv',stringsAsFactors=FALSE)
 user=merge(user,user_coor,by.x=c('location'),by.y=c('addr'))
 #change column order
 user=data.frame(user[,-1],location=user[,1])
@@ -137,6 +137,7 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
+#final 0.7207665
 #0.7222197 ==> 0.7230007
 #0.7253222
 }
