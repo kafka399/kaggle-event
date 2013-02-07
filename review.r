@@ -8,7 +8,7 @@ event=read.csv('data/events.csv')
 #event=read.csv('data/user_friends.csv')
 user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 
-user_coor=read.csv('user_coord3.csv',stringsAsFactors=FALSE)
+user_coor=read.csv('~/user_coord4.csv',stringsAsFactors=FALSE)
 user=merge(user,user_coor,by.x=c('location'),by.y=c('addr'))
 #change column order
 user=data.frame(user[,-1],location=user[,1])
@@ -95,6 +95,7 @@ interested=db[train_nr,c(match(c('interested','not_interested','distance',#'freq
                     #             ,'user_id'
                      #            ,'month'
                          ,'timezone'
+                          #       ,'weekdays','start_hour'
                               ,'locale'
                          ,'populiarity'
                          ,'time_diff'
