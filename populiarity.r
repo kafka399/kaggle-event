@@ -1,10 +1,5 @@
 #how many users are going to attend the event
-#TODO divide by total
 yes= data.frame(event=as.character(attend[,1]),populiarity=sapply(strsplit(as.character((attend[,2])),' '), length))
-no= data.frame(event=as.character(attend[,1]),populiarity=sapply(strsplit(as.character((attend[,5])),' '), length))
-maybe= data.frame(event=as.character(attend[,1]),populiarity=sapply(strsplit(as.character((attend[,3])),' '), length))
-invited= data.frame(event=as.character(attend[,1]),populiarity=sapply(strsplit(as.character((attend[,4])),' '), length))
-nasa=yes$populiarity/(yes$populiarity+no$populiarity+maybe$populiarity)
 
 #how many friends said yes
 attend_yes=apply((db[,1:2]),1,function(x){

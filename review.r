@@ -154,13 +154,13 @@ print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),
 final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
-final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
 
 set.seed(33)
-final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
 
 set.seed(3)
-final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
 
 final_model=combine(final_model3,final_model1,final_model2)
 

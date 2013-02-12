@@ -5,3 +5,4 @@ data
 .Rhistory
 !user_coord4.csv
 !cols.txt
+*.RData
