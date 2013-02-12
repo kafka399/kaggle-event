@@ -5,21 +5,21 @@ setwd('~/git/event')
 source('util.r')
 attend=read.csv('data/event_attendees.csv')
 event=read.csv('data/events.csv')
-#event=read.csv('data/user_friends.csv')
 user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 
+#to reproduce users coordinates run address.r code
 user_coor=read.csv('user_coord4.csv',stringsAsFactors=FALSE)
 user=merge(user,user_coor,by.x=c('location'),by.y=c('addr'))
 #change column order
 user=data.frame(user[,-1],location=user[,1])
-source('user_friends_coord.r')
-
+#source('user_friends_coord2.r')
+tmp=read.csv('user_friends_coord.csv')
+user$user_lat[which(is.na(user$user_lat))]=tmp[,1]
+user$user_long[which(is.na(user$user_long))]=tmp[,2]
 
 train=read.csv('train.csv')
 test=read.csv('test.csv')
 friends=read.csv('data/user_friends.csv')
-#test=xts(test[,-4],order.by=as.POSIXct(as.character(test$timestamp)))
-#train=xts(train[,-4],order.by=as.POSIXct(as.character(train$timestamp)))
 
 db=merge((train),user,by.y=1,by.x=1)
 source('populiarity.r')
@@ -39,13 +39,7 @@ db$timestamp=as.POSIXct(strptime(as.character((db$timestamp)),'%Y-%m-%d %H:%M:%S
 db$timezone[which(is.na(db$timezone))]=0
 #user_time_diff=db$timezone
 db$time_diff=as.numeric(difftime(db$start_time,db$timestamp,units=c('hours')))#-db$timezone/60
-#db$time_diff[db$time_diff<0]=.0000001
-
-#db$time_diff=log(db$time_diff)
-
-
 db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))
-#factor(round(db$timezone/60),levels)
 
 db$locale=factor(sapply(as.character(db$locale),function(x)strsplit(x,"_")[[1]][1]))
 
@@ -55,20 +49,11 @@ db$gender=factor(db$gender)
 db$weekdays=factor(format(db$timestamp,'%a'))#cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)##
 
 db$start_hour=factor(format(db$start_time,'%H'))#+user_time_diff*60
-#db$seeing_time=cut(as.numeric(format(db$timestamp+user_time_diff*60,'%H')),breaks=seq(from=0,to=24,by=8),right=FALSE)
-#db$start_weekday=factor(format(db$start_time,'%a'))
-#db$monthday=factor(format(db$timestamp,'%d'))
-#db$friend_summary(db$friends_yes-db$friends_no+db$friends_maybe*.5+db$friends*.5)
-#db$month=factor(format(db$start_time,'%m'))
 
-#db$c_6[which(db$c_6>300)]=median(db$c_6)
-#db$c_1[which(db$c_1>2000)]=median(db$c_1)
-#db$c_52[which(db$c_52>200)]=median(db$c_52)
-#db$c_5[which(db$c_5>1200)]=median(db$c_5)
-#db$c_7[which(db$c_7>1200)]=median(db$c_7)
 #location
 db$user_long=as.numeric(db$user_long)
 db$user_lat=as.numeric(db$user_lat)
+
 tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long))
 temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
 
@@ -109,13 +94,16 @@ features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interest
 #for(z in seq(6,60,by=3)){
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
-#cols=c(cols,'weekdays')
+
 cols=c(cols[1:19],'weekdays','start_hour')
+cols=c("time_diff","friends",  "populiarity","distance", "joinedAt", "birthyear","c_other",  "friends_yes", 
+       "timezone","friends_maybe","c_6","friends_no","c_1", "locale", "c_52","c_3", "c_21", "c_2", "c_4", "weekdays",
+       "start_hour")
 #cols=c("time_diff","friends",  "populiarity",   "joinedAt", "distance", "birthyear","c_other",  "friends_yes","timezone", "friends_maybe" ,"c_6", "friends_no","locale","c_1","c_2","c_52","c_3","c_5","c_4", "c_7", "c_9", "c_10","c_34")
 
 interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
 set.seed(333)
-rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
+rez=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150,nodesize=5)
 
 pred_data=db[-train_nr,c(match(c('event','user','interested','not_interested',cols),colnames(db)))]
 pred=predict(rez,pred_data[,-4],type='prob')
@@ -137,7 +125,8 @@ pred_rez=ddply(pred_data,.(user),function(x)
 #print(i)
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
 
-#final 0.7207665
+#final 0.728436
+#0.7173787
 #0.7222197 ==> 0.7230007
 #0.7253222
 }
@@ -165,13 +154,13 @@ print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),
 final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
-final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
 
 set.seed(33)
-final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
 
 set.seed(3)
-final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE)#,ntree=500,nodesize=1)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=5)#,ntree=500,nodesize=1)
 
 final_model=combine(final_model3,final_model1,final_model2)
 
@@ -232,7 +221,7 @@ temp=as.factor(c(as.character(db$locale),tmp))
 db_test$locale=(tail(temp,length(tmp)))#droplevels(db_test$locale)
 db_test$joinedAt=as.numeric(as.POSIXct(as.character((db_test$joinedAt)))-as.POSIXct('2000-01-01'))
 
-#location
+
 db_test$user_long=as.numeric(db_test$user_long)
 db_test$user_lat=as.numeric(db_test$user_lat)
 tmp=which(!is.na(db_test$lat)&!is.na(db_test$lng)&!is.na(db_test$user_lat)&!is.na(db_test$user_long))

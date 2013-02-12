@@ -20,7 +20,8 @@ for(i in c(2503:length(addr))){
 
 write.csv(rez,'user_coord.csv')
 
-
+##### fix for user's coordinates where name is mixed with number, ex: Paris 09
+user_coor=read.csv('user_coord.csv')
 tmp=sapply((user_coor$addr),function(x){
   addr=strsplit(x," ")
   ifelse(length(grep("[[:digit:]]",(addr[[1]][length(addr[[1]])])))>0,1,0)

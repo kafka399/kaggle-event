@@ -1,6 +1,4 @@
-#usr_coor=read.csv('user_coord.csv')
-#tmp=merge(user,usr_coor,x.by=6,y.by=1)
-
+#takes all friends of the user and tries to predict user coordinates
 
 user_friends_coord=apply((user[which(is.na(user$user_lat)),]),1,function(x){
   #get user's friends
@@ -36,11 +34,9 @@ user_friends_coord=apply((user[which(is.na(user$user_lat)),]),1,function(x){
   (rez)
   
 })
-user$user_lat[which(is.na(user$user_lat))]=unlist(lapply(user_friends_coord,function(x)x[1]))
-user$user_long[which(is.na(user$user_long))]=unlist(lapply(user_friends_coord,function(x)x[2]))
+write.csv(data.frame(unlist(lapply(user_friends_coord,function(x)x[1])),unlist(lapply(user_friends_coord,function(x)x[2]))),'user_friends_coord2.csv',row.names=FALSE)
+tmp=read.csv('user_friends_coord2.csv')
 
-#temp=lapply(seq_along((user_friends_coord)),function(i) 
-#  user[  as.numeric(names((user_friends_coord))[[i]]),c('user_lat','user_long')]=(user_friends_coord)[[i]])
-#)
-#user_friends_coord=do.call(rbind,user_friends_coord)
-#rfImpute(user)
+#user$user_lat[which(is.na(user$user_lat))]=unlist(lapply(user_friends_coord,function(x)x[1]))
+#user$user_long[which(is.na(user$user_long))]=unlist(lapply(user_friends_coord,function(x)x[2]))
+
