@@ -96,7 +96,9 @@ z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
 
 cols=c(cols[1:19],'weekdays','start_hour')
-cols=c("time_diff","friends",  "populiarity","distance", "joinedAt", "birthyear","c_other",  "friends_yes", 
+cols=c("time_diff","friends",  "populiarity",
+       "distance", 
+       "joinedAt", "birthyear","c_other",  "friends_yes", 
        "timezone","friends_maybe","c_6","friends_no","c_1", "locale", "c_52","c_3", "c_21", "c_2", "c_4", "weekdays",
        "start_hour")
 #cols=c("time_diff","friends",  "populiarity",   "joinedAt", "distance", "birthyear","c_other",  "friends_yes","timezone", "friends_maybe" ,"c_6", "friends_no","locale","c_1","c_2","c_52","c_3","c_5","c_4", "c_7", "c_9", "c_10","c_34")
@@ -154,13 +156,13 @@ print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),
 final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
-final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
 
 set.seed(33)
-final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
 
 set.seed(3)
-final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=3)#,ntree=500,nodesize=1)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
 
 final_model=combine(final_model3,final_model1,final_model2)
 
