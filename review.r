@@ -20,8 +20,10 @@ user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 train=read.csv('train.csv')
 test=read.csv('test.csv')
 friends=read.csv('data/user_friends.csv')
+#train=(train[!duplicated(train[,c('user','event')]),])
 
 db=merge((train),user,by.y=1,by.x=1)
+
 source('populiarity.r')
 #db=merge(db,friend_count,by.x=c('user'),by.y=c('user'))
 db=cbind(db,friends_yes=attend_yes,friends_no=attend_no,friends_maybe=attend_maybe,friends=attend_invited)
@@ -49,7 +51,22 @@ db$gender=factor(db$gender)
 db$weekdays=factor(format(db$timestamp,'%a'))#cut(as.numeric(format(db$timestamp,'%H')),breaks=seq(from=0,to=24,by=3),right=FALSE)##
 
 db$start_hour=factor(format(db$start_time,'%H'))#+user_time_diff*60
+tmp=sapply((db$location),function(x){
+ addr=strsplit(x," ")
+ ifelse(length(grep("[[:digit:]]",(addr[[1]][length(addr[[1]])])))>0,1,0)
+})
 
+addr=as.character(sapply(db$location[which(as.numeric(tmp)==1)],function(x){
+ y=strsplit(x,"  ")[[1]]
+ y[[1]][1:(length(y[[1]])-1)]
+}))
+db$location[which(as.numeric(tmp)==1)]=addr
+
+db$location_mat=apply(db[,c('country','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
+  apply(db[,c('city','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
+  apply(db[,c('state','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=FALSE),0))
+
+db$location_mat[is.na(db$location_mat)]=0
 #distance forbidden
 #db$user_long=as.numeric(db$user_long)
 #db$user_lat=as.numeric(db$user_lat)
@@ -76,16 +93,7 @@ train_nr=which(db$user %in%train_nr)
 #db=data.frame(db,model.matrix(~country-1,data=db))
 #db=db[,-(match(c('country'),colnames(db)))]
 
-#tmp=sapply((db$location),function(x){
-#  addr=strsplit(x," ")
-#  ifelse(length(grep("[[:digit:]]",(addr[[1]][length(addr[[1]])])))>0,1,0)
-#})
 
-#addr=as.character(sapply(db$location[which(as.numeric(tmp)==1)],function(x){
-#  y=strsplit(x,"  ")[[1]]
-#  y[[1]][1:(length(y[[1]])-1)]
-#}))
-#db$location[which(as.numeric(tmp)==1)]=addr
 #addr=sapply(strsplit((db$location),'  '),function(x)ifelse(length(x)>0,x[length(x)],''))
 #addr[which(addr=="CA")]="California"
 #addr[which(addr=="AZ")]="Arizona"
@@ -96,11 +104,7 @@ train_nr=which(db$user %in%train_nr)
 #db$location=as.factor(addr)
 #db=data.frame(db,model.matrix(~location-1,data=db))
 #db=db[,-(match(c('location'),colnames(db)))]
-db$location_mat=apply(db[,c('country','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
-                   apply(db[,c('city','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
-                   apply(db[,c('state','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=FALSE),0))
-                  
-db$location_mat[is.na(db$location_mat)]=0
+
 
 interested=db[,c(match(c('interested','not_interested',#'distance',#'frequency',
                                  'invited','birthyear','gender'
@@ -183,18 +187,6 @@ public_rez=ddply(public,.(user),function(x)
 
 
 ###############FINAL#############
-final_model=db[,c(match(c('interested','not_interested',cols),colnames(db)))]
-
-set.seed(333)
-final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-
-set.seed(33)
-final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-
-set.seed(3)
-final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-
-final_model=combine(final_model3,final_model1,final_model2)
 
 ids=read.csv('event_popularity_benchmark_private_test_only.csv')
 
@@ -255,35 +247,41 @@ db_test$weekdays=factor(format(db_test$timestamp,'%a'))
 db_test$start_hour=factor(format(db_test$start_time,'%H'))
 db_test$seeing_time=cut(as.numeric(format(db_test$timestamp+test_user_time_diff*60,'%H')),breaks=seq(from=0,to=24,by=8),right=FALSE)
 
-# tmp=sapply((db_test$location),function(x){
-#   addr=strsplit(x," ")
-#   ifelse(length(grep("[[:digit:]]",(addr[[1]][length(addr[[1]])])))>0,1,0)
-# })
-# 
-# addr=as.character(sapply(db_test$location[which(as.numeric(tmp)==1)],function(x){
-#   y=strsplit(x,"  ")[[1]]
-#   y[[1]][1:(length(y[[1]])-1)]
-# }))
-# db_test$location[which(as.numeric(tmp)==1)]=addr
-# addr=sapply(strsplit((db_test$location),'  '),function(x)ifelse(length(x)>0,x[length(x)],''))
-# addr[which(addr=="CA")]="California"
-# addr[which(addr=="AZ")]="Arizona"
-# addr[which(addr=="CT")]="Connecticut"
-# addr[which(addr=="ON")]="Ontario"
-# addr[which(addr=="NJ")]="New Jersey"
-# addr[which(addr=="NY")]="New York"
-#db$location=as.factor(addr)
-#db=data.frame(db,model.matrix(~location-1,data=db))
-#db=db[,-(match(c('location'),colnames(db)))]
+tmp=sapply((db_test$location),function(x){
+  addr=strsplit(x," ")
+  ifelse(length(grep("[[:digit:]]",(addr[[1]][length(addr[[1]])])))>0,1,0)
+})
+
+addr=as.character(sapply(db_test$location[which(as.numeric(tmp)==1)],function(x){
+  y=strsplit(x,"  ")[[1]]
+  y[[1]][1:(length(y[[1]])-1)]
+}))
+db_test$location[which(as.numeric(tmp)==1)]=addr
 
 db_test$location_mat=(apply(db_test[,c('country','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
                         apply(db_test[,c('city','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=TRUE),0))+
                         apply(db_test[,c('state','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=FALSE),0)))
 db_test$location_mat[is.na(db_test$location_mat)]=0
 
-test_selected=db_test[,match(cols,colnames(db_test))]
 
 ########predict#########
+tmp=data.frame(interested=1,not_interested=0,db_test[which(db_test$event%in%public$event &db_test$user%in%public$user),])
+tmp=tmp[,c(match(c('interested','not_interested',cols),colnames(tmp)))]
+final_model=rbind(db[,c(match(c('interested','not_interested',cols),colnames(db)))],tmp)
+
+set.seed(333)
+final_model3=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
+
+set.seed(33)
+final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
+
+set.seed(3)
+final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
+
+final_model=combine(final_model3,final_model1,final_model2)
+
+test_selected=db_test[,match(cols,colnames(db_test))]
+
 pred_test=predict(final_model,test_selected,type='prob')
 pred_data=cbind(db_test[,1:3],pred_test[,3])
 
