@@ -277,7 +277,15 @@ final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=fina
 
 set.seed(3)
 final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-
+for(i in 1:10)
+{
+  set.seed(i)
+  final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
+  if(i>1)
+    final_rez=combine(final_rez,final_model1)
+  else
+    final_rez=final_model1
+}
 final_model=combine(final_model3,final_model1,final_model2)
 
 test_selected=db_test[,match(cols,colnames(db_test))]
