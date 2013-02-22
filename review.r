@@ -7,15 +7,6 @@ attend=read.csv('data/event_attendees.csv')
 event=read.csv('data/events.csv')
 user=read.csv('data/users.csv',stringsAsFactors=FALSE)
 
-#to reproduce users coordinates run address.r code
-#user_coor=read.csv('user_coord4.csv',stringsAsFactors=FALSE)
-#user=merge(user,user_coor,by.x=c('location'),by.y=c('addr'))
-#change column order
-#user=data.frame(user[,-1],location=user[,1])
-#source('user_friends_coord2.r')
-#tmp=read.csv('user_friends_coord.csv')
-#user$user_lat[which(is.na(user$user_lat))]=tmp[,1]
-#user$user_long[which(is.na(user$user_long))]=tmp[,2]
 
 train=read.csv('train.csv')
 test=read.csv('test.csv')
@@ -25,7 +16,7 @@ friends=read.csv('data/user_friends.csv')
 db=merge((train),user,by.y=1,by.x=1)
 
 source('populiarity.r')
-#db=merge(db,friend_count,by.x=c('user'),by.y=c('user'))
+
 db=cbind(db,friends_yes=attend_yes,friends_no=attend_no,friends_maybe=attend_maybe,friends=attend_invited)
 event_merge=merge(event,yes,by.x=1,by.y=1)
 event_merge$populiarity=log(event_merge$populiarity+1)
@@ -39,7 +30,7 @@ db$start_time=as.POSIXct(strptime(as.character((db$start_time)),'%Y-%m-%dT%H:%M:
 db$timestamp=as.POSIXct(strptime(as.character((db$timestamp)),'%Y-%m-%d %H:%M:%S'),tz='UTC')
 
 db$timezone[which(is.na(db$timezone))]=0
-#user_time_diff=db$timezone
+
 db$time_diff=as.numeric(difftime(db$start_time,db$timestamp,units=c('hours')))#-db$timezone/60
 db$timezone=cut(round(db$timezone/60),breaks=seq(-14,14,2))
 
@@ -67,45 +58,15 @@ db$location_mat=apply(db[,c('country','location')],1,function(x)ifelse(nchar(as.
   apply(db[,c('state','location')],1,function(x)ifelse(nchar(as.character(x[1]))>1,grep(as.character(x[1]),as.character(x[2]),ignore.case=FALSE),0))
 
 db$location_mat[is.na(db$location_mat)]=0
-#distance forbidden
-#db$user_long=as.numeric(db$user_long)
-#db$user_lat=as.numeric(db$user_lat)
 
-#tmp=which(!is.na(db$lat)&!is.na(db$lng)&!is.na(db$user_lat)&!is.na(db$user_long))
-#temp=distVincentyEllipsoid(p1 = cbind(db$user_long,db$user_lat)[tmp,], p2 = cbind(db$lng,db$lat)[tmp,])
-
-#db=data.frame(db,distance=db$lng)
-#db$distance=0#median(temp)
-#db$distance[tmp]=temp
-
-#user's engadement in events -- front looking feature
-#db$frequency=apply(db,1,function(x){ 
-#  y=as.numeric(difftime(db[which(db$user%in%x[2]),]$timestamp,as.POSIXct(x[4],tz='UTC'),units='secs'))
-#  if(length(y)==0) return(0)
-#  else length(which(y<0))
-#})/db$joinedAt
 
 unique_users=unique(db$user)#2015
 set.seed(333)
 train_nr=unique_users[sample(1:length(unique_users),1338)]#
 train_nr=which(db$user %in%train_nr)
 
-#db=data.frame(db,model.matrix(~country-1,data=db))
-#db=db[,-(match(c('country'),colnames(db)))]
 
-
-#addr=sapply(strsplit((db$location),'  '),function(x)ifelse(length(x)>0,x[length(x)],''))
-#addr[which(addr=="CA")]="California"
-#addr[which(addr=="AZ")]="Arizona"
-#addr[which(addr=="CT")]="Connecticut"
-#addr[which(addr=="ON")]="Ontario"
-#addr[which(addr=="NJ")]="New Jersey"
-#addr[which(addr=="NY")]="New York"
-#db$location=as.factor(addr)
-#db=data.frame(db,model.matrix(~location-1,data=db))
-#db=db[,-(match(c('location'),colnames(db)))]
-
-
+####feature selection#####
 interested=db[,c(match(c('interested','not_interested',#'distance',#'frequency',
                                  'invited','birthyear','gender'
                         #         ,'weekdays','start_hour'
@@ -126,12 +87,12 @@ interested=db[,c(match(c('interested','not_interested',#'distance',#'frequency',
 
 set.seed(333)
 features=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=interested,importance=TRUE,ntree=150)#,nodesize=1)
-#for(z in seq(6,60,by=3)){
+
 z=30
 cols= rownames(importance(features)[order(importance(features)[,5],decreasing=TRUE),])[1:z][which(rownames(importance(features)[order(randomForest::importance(features)[,5],decreasing=TRUE),])[1:z]%in%rownames(importance(features)[order(randomForest::importance(features)[,4],decreasing=TRUE),])[1:z])]
-
 cols=c(cols[1:19],'weekdays','start_hour')
-#for(z in seq(30,43,by=1)){
+
+#hardcoded features after cherry picking
 cols=c("time_diff","friends",  "populiarity",
        #"country",
        #"distance", 
@@ -145,7 +106,7 @@ cols=c("time_diff","friends",  "populiarity",
       # ,"countryUnited.States", "countryDominican.Republic", "countryCanada","countryMauritius","countryUnited.Kingdom", "countryItaly" ,  "countryAustralia", "countryGreece" ,"countryHong.Kong","countryIndia", "countryUganda","countryFinland","countrySaint.Vincent.and.the.Grenadines", "countrySingapore","countryMexico","countrySpain","countryFrance","countryPakistan","countrySwitzerland"
        )
 #cols=c("time_diff","friends",  "populiarity",   "joinedAt", "distance", "birthyear","c_other",  "friends_yes","timezone", "friends_maybe" ,"c_6", "friends_no","locale","c_1","c_2","c_52","c_3","c_5","c_4", "c_7", "c_9", "c_10","c_34")
-#cols=cols[1:z]
+
 interested=db[train_nr,c(match(c('interested','not_interested',cols),colnames(db)))]
 
 set.seed(333)
@@ -163,15 +124,15 @@ benchmark_rez=ddply(benchmark_data,.(user),function(x)
 {
   data.frame(event=output(x,.99));
 })
-#for(i in seq(.2,.75,by=.05)){
+
 pred_rez=ddply(pred_data,.(user),function(x)
 {
   data.frame(event=output(x,.0001));
 })
-#print(i)
+
 print(mapk(200,strsplit(as.character(sub("[[:space:]]+$",'',benchmark_rez[,2])),' '),strsplit(as.character(sub("[[:space:]]+$",'',pred_rez[,2])),' ')))
-#0.7078939
-}
+
+
 #final 0.6989714
 #public 0.7284886
 
@@ -264,7 +225,7 @@ db_test$location_mat=(apply(db_test[,c('country','location')],1,function(x)ifels
 db_test$location_mat[is.na(db_test$location_mat)]=0
 
 
-########predict#########
+########predict final#########
 tmp=data.frame(interested=1,not_interested=0,db_test[which(db_test$event%in%public$event &db_test$user%in%public$user),])
 tmp=tmp[,c(match(c('interested','not_interested',cols),colnames(tmp)))]
 final_model=rbind(db[,c(match(c('interested','not_interested',cols),colnames(db)))],tmp)
@@ -277,15 +238,7 @@ final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=fina
 
 set.seed(3)
 final_model2=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-for(i in 1:10)
-{
-  set.seed(i)
-  final_model1=randomForest(factor((interested-not_interested)/2+.5) ~ .,data=final_model,importance=TRUE,nodesize=4)#,ntree=500,nodesize=1)
-  if(i>1)
-    final_rez=combine(final_rez,final_model1)
-  else
-    final_rez=final_model1
-}
+
 final_model=combine(final_model3,final_model1,final_model2)
 
 test_selected=db_test[,match(cols,colnames(db_test))]
